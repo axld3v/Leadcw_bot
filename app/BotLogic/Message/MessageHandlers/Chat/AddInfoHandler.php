@@ -13,21 +13,11 @@ use App\Text\getText;
 class AddInfoHandler extends BaseMessageHandler
 {
     public static array $actions = [
-        ['action' => 'who', 'type' => 'btn'],
-        ['action' => 'name', 'type' => 'nobtn'],
-        ['action' => 'phone', 'type' => 'nobtn'],
-        ['action' => 'typecontact', 'type' => 'btn'],
-        ['action' => 'source', 'type' => 'btn'],
-        ['action' => 'brand', 'type' => 'btn'],
-        ['action' => 'complexion', 'type' => 'nobtn'],
-        ['action' => 'agent', 'type' => 'btn'],
-        ['action' => 'price', 'type' => 'nobtn'],
-        ['action' => 'zahod', 'type' => 'nobtn'],
-        ['action' => 'prepayment', 'type' => 'btn'],
-        ['action' => 'prepaymentget', 'type' => 'nobtn'],
-        ['action' => 'city', 'type' => 'btn'],
-        ['action' => 'type', 'type' => 'btn'],
-        ['action' => 'additionalcomment', 'type' => 'nobtn'],
+        ['action' => 'date', 'type' => 'btn'],
+        ['action' => 'requests-tg', 'type' => 'btn'],
+        ['action' => 'requests-inst', 'type' => 'btn'],
+        ['action' => 'requests-wat', 'type' => 'btn'],
+        ['action' => 'requests-all', 'type' => 'btn'],
     ];
 
     public static function handle(UserDTO &$userDTO, Message $update): bool
@@ -36,7 +26,7 @@ class AddInfoHandler extends BaseMessageHandler
         {
             if ($update->message == "добавить информацию")
             {
-                self::getByActionBtn($userDTO, "who");
+                self::getByActionBtn($userDTO, "date");
                 return true;
             }
             else if (str_contains($userDTO->user->lastmessage, "geta_"))
@@ -65,10 +55,13 @@ class AddInfoHandler extends BaseMessageHandler
     {
         try
         {
+            $count = 2;
+            $items = self::getItemsBtn(getText::getBySheets($action)['items'], $action);
+            if ($items >= 10) $count = 5;
             $sendMessage = new SendMessage($userDTO->user);
             $sendMessage->text = getText::getBySheets($action)['text'];
             $sendMessage->reply_markup = new KeyboardInline(
-                self::getItemsBtn(getText::getBySheets($action)['items'], $action), 2
+                $items, $count
             );
             $userDTO->user->updateAndSave(['lastmessage' => "geta_{$action}_info"]);
             $userDTO->execute($sendMessage);
@@ -150,12 +143,7 @@ class AddInfoHandler extends BaseMessageHandler
             {
                 if (self::$actions[$i]['action'] == 'prepayment')
                 {
-                    $answer = self::getAnswerInfo($userDTO, 'prepayment');
-                    if ($answer == "Нет")
-                    {
-                        $nextType = self::$actions[$i + 2];
-                        continue;
-                    }
+
                 }
                 $nextType = self::$actions[$i + 1];
             }
@@ -183,11 +171,7 @@ class AddInfoHandler extends BaseMessageHandler
             {
                 if (self::$actions[$i - 1]['action'] == "prepaymentget")
                 {
-                    if (self::getAnswerInfo($userDTO, 'prepayment') == "Нет")
-                    {
-                        $previousType = self::$actions[$i - 2];
-                        continue;
-                    }
+
                 }
                 $previousType = self::$actions[$i - 1];
 
@@ -210,63 +194,18 @@ class AddInfoHandler extends BaseMessageHandler
     {
         try
         {
-            $who = self::getAnswerInfo($userDTO, 'who') ?? "";
-            $name = self::getAnswerInfo($userDTO, 'name') ?? "";
-            $phone = self::getAnswerInfo($userDTO, 'phone') ?? "";
-            $typecontact = self::getAnswerInfo($userDTO, 'typecontact') ?? "";
-            $source = self::getAnswerInfo($userDTO, 'source') ?? "";
-            $brand = self::getAnswerInfo($userDTO, 'brand') ?? "";
-            $complexion = self::getAnswerInfo($userDTO, 'complexion') ?? "";
-            $agent = self::getAnswerInfo($userDTO, 'agent') ?? "";
-            $price = self::getAnswerInfo($userDTO, 'price') ?? "";
-            $zahod = AddInfoHandler::getAnswerInfo($userDTO, 'zahod') ?? "";
-            $prepayment = self::getAnswerInfo($userDTO, 'prepayment') ?? "";
-            $prepaymentget = self::getAnswerInfo($userDTO, 'prepaymentget') ?? "";
-            $city = self::getAnswerInfo($userDTO, 'city') ?? "";
-            $type = self::getAnswerInfo($userDTO, 'type') ?? "";
-            $additionalcomment = self::getAnswerInfo($userDTO, 'additionalcomment') ?? "";
+            $date = self::getAnswerInfo($userDTO, 'date') ?? "";
+            $requests_tg = self::getAnswerInfo($userDTO, 'requests-tg') ?? "";
+            $requests_inst = self::getAnswerInfo($userDTO, 'requests-inst') ?? "";
+            $requests_wat = self::getAnswerInfo($userDTO, 'requests-wat') ?? "";
+            $requests_all = self::getAnswerInfo($userDTO, 'requests-all') ?? "";
 
-            $priceVal = self::extractNumber($price);
-            $zahodVal = AddInfoHandler::extractNumber($zahod);
-            $rateVal = str_replace($zahodVal, "", $zahod);
-            $pribil = AddInfoHandler::toDouble($priceVal) - AddInfoHandler::toDouble($zahodVal);
-            $pribil = strval($pribil) . $rateVal;
-
-            $ostatok = "";
-            if ($prepayment == "Да")
-            {
-                $priceVal = self::extractNumber($price);
-                $prepaymentVal = self::extractNumber($prepaymentget);
-                $rate = str_replace($priceVal, "", $price);
-
-                $ostatok = self::toDouble($priceVal) - self::toDouble($prepaymentVal);
-                $ostatok = strval($ostatok) . $rate;
-            }
-            else
-            {
-                $prepaymentget = "";
-                $ostatok = "";
-            }
             $text = "Проверьте данные\n\n" .
-                "<b>Кто: </b>$who\n" .
-                "<b>Имя: </b>$name\n" .
-                "<b>Номер телефона: </b>$phone\n" .
-                "<b>Как связаться: </b>$typecontact\n" .
-                "<b>Источник: </b>$source\n" .
-                "<b>Бренд: </b>$brand\n" .
-                "<b>Комплектация: </b>$complexion\n" .
-                "<b>Агент: </b>$agent\n" .
-                "<b>Стоимость: </b>$price\n" .
-                "<b>Заход: </b>$zahod\n" .
-                "<b>Прибыль: </b>$pribil\n";
-            if ($prepayment == "Да")
-            {
-                $text .= "<b>Предоплата: </b>$prepaymentget\n" .
-                    "<b>Остаток: </b>$ostatok\n";
-            }
-            $text .= "<b>Город: </b>$city\n" .
-                "<b>Набор: </b>$type\n" .
-                "<b>Доп. комментарий: </b>$additionalcomment";
+                "<b>Дата: </b>$date\n" .
+                "<b>Заявки телеграм : </b>$requests_tg\n" .
+                "<b>Заявки инстаграм: </b>$requests_inst\n" .
+                "<b>Заявки вотсап: </b>$requests_wat\n" .
+                "<b>Кол-во продаж: </b>$requests_all\n";
 
             $sendMessage = new SendMessage($userDTO->user);
             $sendMessage->text = $text;

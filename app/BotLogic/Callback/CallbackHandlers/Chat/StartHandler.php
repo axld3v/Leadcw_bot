@@ -23,14 +23,19 @@ class StartHandler extends BaseCallbackHandler
             }
             else if (str_contains($update->button, "geta_"))
             {
+                $type = explode("_", $update->button)[1];
+                if ($type == "date" && str_contains(mb_strtolower($update->text_button), "сегодн"))
+                    $update->text_button = date('d.m.Y');
+
                 $value = $update->text_button;
-                if (str_contains(mb_strtolower($value), "другое"))
+                if (str_contains(mb_strtolower($value), "другое")
+                    || str_contains(mb_strtolower($value), "ввести")
+                    || str_contains(mb_strtolower($value), "вручную"))
                 {
                     WhatChoose::clear($userDTO, $update);
                     return true;
                 }
                 WhatChoose::handle($userDTO, $update, '');
-                $type = explode("_", $update->button)[1];
                 AddInfoHandler::addAnswerInfo($userDTO, $type, $value);
                 AddInfoHandler::getNextQuestion($userDTO, $type);
                 return true;
@@ -59,49 +64,17 @@ class StartHandler extends BaseCallbackHandler
     {
         try
         {
-            $who = AddInfoHandler::getAnswerInfo($userDTO, 'who') ?? "";
-            $name = AddInfoHandler::getAnswerInfo($userDTO, 'name') ?? "";
-            $phone = AddInfoHandler::getAnswerInfo($userDTO, 'phone') ?? "";
-            $typecontact = AddInfoHandler::getAnswerInfo($userDTO, 'typecontact') ?? "";
-            $source = AddInfoHandler::getAnswerInfo($userDTO, 'source') ?? "";
-            $brand = AddInfoHandler::getAnswerInfo($userDTO, 'brand') ?? "";
-            $complexion = AddInfoHandler::getAnswerInfo($userDTO, 'complexion') ?? "";
-            $agent = AddInfoHandler::getAnswerInfo($userDTO, 'agent') ?? "";
-            $price = AddInfoHandler::getAnswerInfo($userDTO, 'price') ?? "";
-            $zahod = AddInfoHandler::getAnswerInfo($userDTO, 'zahod') ?? "";
-            $prepayment = AddInfoHandler::getAnswerInfo($userDTO, 'prepayment') ?? "";
-            $prepaymentget = AddInfoHandler::getAnswerInfo($userDTO, 'prepaymentget') ?? "";
-            $city = AddInfoHandler::getAnswerInfo($userDTO, 'city') ?? "";
-            $type = AddInfoHandler::getAnswerInfo($userDTO, 'type') ?? "";
-            $additionalcomment = AddInfoHandler::getAnswerInfo($userDTO, 'additionalcomment') ?? "";
-            $ostatok = "";
+            $date = AddInfoHandler::getAnswerInfo($userDTO, 'date') ?? "";
+            $requests_tg = AddInfoHandler::getAnswerInfo($userDTO, 'requests-tg') ?? "";
+            $requests_inst = AddInfoHandler::getAnswerInfo($userDTO, 'requests-inst') ?? "";
+            $requests_wat = AddInfoHandler::getAnswerInfo($userDTO, 'requests-wat') ?? "";
+            $requests_all = AddInfoHandler::getAnswerInfo($userDTO, 'requests-all') ?? "";
 
-            $priceVal = AddInfoHandler::extractNumber($price);
-            $zahodVal = AddInfoHandler::extractNumber($zahod);
-            $rateVal = str_replace($zahodVal, "", $zahod);
-            $pribil = AddInfoHandler::toDouble($priceVal) - AddInfoHandler::toDouble($zahodVal);
-            $pribil = strval($pribil) . $rateVal;
-
-            if ($prepayment == "Да")
-            {
-                $prepaymentVal = AddInfoHandler::extractNumber($prepaymentget);
-                $rate = str_replace($priceVal, "", $price);
-
-                $ostatok = AddInfoHandler::toDouble($priceVal) - AddInfoHandler::toDouble($prepaymentVal);
-                $ostatok = strval($ostatok) . $rate;
-
-            }
-            else
-            {
-                $prepaymentget = "";
-                $ostatok = "";
-            }
-
+            $name = ($userDTO->user->first_name ?? "") . " " . ($userDTO->user->last_name ?? "");
             $userDTO->getSheets()->appendLastRow([[
-                date('d.m.Y H:i'), $who, $name, $phone, $typecontact,
-                $source, $brand, $complexion, $agent, $price, $zahod, $pribil,
-                $prepaymentget, $ostatok, $city, $type, $additionalcomment
-            ]], 'Данные', 'A2:O');
+                $date, $name, $userDTO->user->username, $requests_tg, $requests_inst,
+                $requests_wat, $requests_all
+            ]], 'Данные', 'A2:G');
 
         } catch (\Throwable $throwable)
         {

@@ -18,19 +18,19 @@ class TextSheets
                     'text'  => $text_arr[2][0] ?? "",
                     'items' => self::clearItems($text_arr[3] ?? [])
                 ],
-                'requests_tg'      => [
+                'requests-tg'      => [
                     'text'  => $text_arr[5][0] ?? "",
                     'items' => self::clearItems($text_arr[6] ?? [])
                 ],
-                'requests_inst'    => [
+                'requests-inst'    => [
                     'text'  => $text_arr[8][0] ?? "",
                     'items' => self::clearItems($text_arr[9] ?? [])
                 ],
-                'requests_wat'     => [
+                'requests-wat'     => [
                     'text'  => $text_arr[11][0] ?? "",
                     'items' => self::clearItems($text_arr[12] ?? [])
                 ],
-                'requests_all'     => [
+                'requests-all'     => [
                     'text'  => $text_arr[14][0] ?? "",
                     'items' => self::clearItems($text_arr[15] ?? [])
                 ],
